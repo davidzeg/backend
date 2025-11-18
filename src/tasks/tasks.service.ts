@@ -8,7 +8,12 @@ import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task as ITask, PaginatedResponse } from 'shared-types';
+import {
+  Task as ITask,
+  PaginatedResponse,
+  TaskFilters,
+  TaskListResponse,
+} from 'shared-types';
 import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
@@ -36,27 +41,61 @@ export class TasksService {
     return savedTask;
   }
 
-  async findAll(
-    projectId?: string,
-    page = 1,
-    pageSize = 20,
-  ): Promise<PaginatedResponse<ITask>> {
-    const skip = (page - 1) * pageSize;
+  async findAll(filters: TaskFilters): Promise<PaginatedResponse<ITask>> {
+    const {
+      page = 1,
+      pageSize = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      status,
+      priority,
+      asigneeId,
+      projectId,
+      search,
+      tags,
+    } = filters;
 
     const queryBuilder = this.tasksRepository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.asignee', 'asignee')
       .leftJoinAndSelect('task.createdBy', 'createdBy');
 
+    if (status) {
+      queryBuilder.andWhere('task.status = :status', { status });
+    }
+
+    if (priority) {
+      queryBuilder.andWhere('task.priority = :priority', { priority });
+    }
+
+    if (asigneeId) {
+      queryBuilder.andWhere('task.asigneeId = :asigneeId', { asigneeId });
+    }
+
     if (projectId) {
       queryBuilder.where('task.projectId = :projectId', { projectId });
     }
 
-    const [tasks, total] = await queryBuilder
-      .skip(skip)
-      .take(pageSize)
-      .orderBy('task.createdAt', 'DESC')
-      .getManyAndCount();
+    if (search) {
+      queryBuilder.andWhere(
+        'task.title ILIKE :search OR task.description ILIKE :search',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (tags && tags.length > 0) {
+      queryBuilder.andWhere('task.tags && :tags', { tags });
+    }
+
+    queryBuilder.orderBy(
+      `task.${sortBy}`,
+      sortOrder.toUpperCase() as 'ASC' | 'DESC',
+    );
+
+    const skip = (page - 1) * pageSize;
+    queryBuilder.skip(skip).take(pageSize);
+
+    const [tasks, total] = await queryBuilder.getManyAndCount();
 
     return {
       data: tasks,
