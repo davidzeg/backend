@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -15,6 +16,8 @@ import * as bcrypt from 'bcrypt';
 import { Task } from 'src/tasks/entities/task.entity';
 
 @Entity('users')
+@Index(['email'], { unique: true })
+@Index(['createdAt'])
 export class User implements UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -59,12 +62,27 @@ export class User implements UserEntity {
   @BeforeUpdate()
   async hashPassword() {
     if (this.password && !this.password.startsWith('$2b$')) {
-      this.password = await bcrypt.hash(this.password, 10);
+      const saltRounds = 12;
+      this.password = await bcrypt.hash(this.password, saltRounds);
+    }
+  }
+
+  @BeforeUpdate()
+  async hasRefreshToken() {
+    if (this.refreshToken && !this.refreshToken.startsWith('$2b$')) {
+      this.refreshToken = await bcrypt.hash(this.refreshToken, 10);
     }
   }
 
   async validatePassword(password: string): Promise<boolean> {
     return bcrypt.compare(password, this.password);
+  }
+
+  async validateRefreshToken(token: string): Promise<boolean> {
+    if (!this.refreshToken) {
+      return false;
+    }
+    return bcrypt.compare(token, this.refreshToken);
   }
 
   async updateRefreshToken(token: string | undefined) {
