@@ -8,6 +8,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "seed": "nest start --entryFile seeds/seed",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -30,13 +31,18 @@
     "@nestjs/platform-socket.io": "^11.1.8",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.8",
+    "@types/passport-jwt": "^4.0.1",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "ioredis": "^5.8.2",
+    "passport-jwt": "^4.0.1",
     "pg": "^8.16.3",
     "redis": "^5.9.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "shared-types": "workspace:*",
+    "socket.io": "^4.8.1",
     "typeorm": "^0.3.27"
   },
   "devDependencies": {
